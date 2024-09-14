@@ -1,0 +1,3 @@
+---@class LuaEntity
+---@field valid boolean
+---@field unit_number integer|nil

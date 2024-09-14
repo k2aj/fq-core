@@ -1,0 +1,12 @@
+{
+    "name": "fq-core",
+    "title": "FQ Core",
+    "author": "k2aj",
+    
+    "version": "0.1.0",
+    "factorio_version": "1.1",
+    "dependencies": [
+        "base >= 1.1"
+    ],
+    "description": "Utility library. Does nothing on its own."
+}
