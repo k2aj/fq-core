@@ -19,21 +19,47 @@ local function apply_recoil(event, amount)
     local source = event.source_entity
     if source == nil or not source.valid then return end
 
-    -- Extremely horrible way to get the target position of an effect
-    -- No, event.target_entity.position doesn't work. It just gives the source position.
-    local shooting_state
-    if source.type == "character" then 
-        shooting_state = source.shooting_state
-    elseif vehicle_types[source.type] then
-        local driver = source.get_driver()
-        if driver == nil then return end
-        if driver.type ~= "character" then return end
-        shooting_state = driver.shooting_state
+    local src_pos = source.position
+    local tgt_pos
+    if event.target_entity then
+        -- Note: if target_entity ~= nil, then the event has no target_position
+        tgt_pos = event.target_entity.position
+    else
+        tgt_pos = event.target_position
     end
 
-    if shooting_state == nil then return end
-    local src_pos = source.position
-    local tgt_pos = shooting_state.position
+    if src_pos.x == tgt_pos.x and src_pos.y == tgt_pos.y then
+        --[[
+            Someone didn't read the documentation and used recoil as a source_effect.
+            (or didn't update past FQ Core 0.1.0)
+            (or we just got extremely unlucky)
+
+            The problem here is that tgt_pos == src_pos for source effects,
+            so we can't use them to compute recoil direction.
+        ]]--
+        log(
+            "DEPRECATION: Using trigger_effect.recoil as a source_effect is deprecated. " .. 
+            "Use it as target_effect instead (recoil amount = "..(amount*60)..")"
+        )
+        --[[
+            Workaround used in FQ Core 0.1.0.
+            Only works on characters and vehicles in which the driver is shooting.
+            Retained for backwards compatibility.
+
+            TODO: remove this in FQ Core 1.0.0
+        ]]--
+        local shooting_state
+        if source.type == "character" then 
+            shooting_state = source.shooting_state
+        elseif vehicle_types[source.type] then
+            local driver = source.get_driver()
+            if driver == nil then return end
+            if driver.type ~= "character" then return end
+            shooting_state = driver.shooting_state
+        end
+        if shooting_state == nil then return end
+        tgt_pos = shooting_state.position
+    end
 
     -- TL;DR: calculate displacement vector from target to source, 
     -- then scale its length to amount 

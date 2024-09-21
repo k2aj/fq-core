@@ -3,3 +3,10 @@ Version: 0.1.0
 Date: 2024-09-14
   Features:
     - Add recoil mechanic
+---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: TODO
+  Features:
+    - trigger_effect.recoil should now work on all entities, not just characters and vehicles.
+  Changes:
+    - Using trigger_effect.recoil as a source_effect is now deprecated.
