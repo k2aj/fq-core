@@ -3,7 +3,7 @@
     "title": "FQ Core",
     "author": "k2aj",
     
-    "version": "0.1.0",
+    "version": "0.2.0",
     "factorio_version": "1.1",
     "dependencies": [
         "base >= 1.1"
