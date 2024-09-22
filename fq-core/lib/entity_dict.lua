@@ -177,17 +177,23 @@ exports.foreach_filter_in_place = function(dict, callback)
 
     local aside_entities = dict.aside_entities
     local aside_entries = dict.aside_entries
-    for i = #aside_entities,1,-1 do
+    local no_aside = 0
+    for i = 1,#aside_entities do
         local entity = aside_entities[i]
         local entry = aside_entries[i]
         local keep = entity.valid
         if keep then
             keep = callback(entity, entry)
         end
-        if not keep then
-            aside_entities[i] = nil
-            aside_entries[i] = nil
+        if keep then
+            no_aside = no_aside+1
+            aside_entities[no_aside] = entity
+            aside_entries[no_aside] = entry
         end
+    end
+    for i = #aside_entities,no_aside+1,-1 do
+        aside_entities[i] = nil
+        aside_entries[i] = nil
     end
 
     local dense_entities = dict.dense_entities
