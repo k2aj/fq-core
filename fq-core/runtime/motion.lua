@@ -1,6 +1,7 @@
 local exports = {}
 
 local entity_dict = require("lib.entity_dict")
+local text = require("lib.text")
 
 ---@class MotionComponent
 ---@field vx number
@@ -15,18 +16,53 @@ local vehicle_types = {
     ["locomotive"] = true
 }
 
-local function apply_recoil(event, amount)
+---@param dirX number
+---@param dirY number
+---@param speed number
+---@param randomness number
+---@return number vx
+---@return number vy
+local function make_motion_vector(dirX, dirY, speed, randomness)
+    
+    -- normalize [dirX, dirY]
+    local norm2 = dirX*dirX + dirY*dirY
+    if norm2 > 0.000001 then
+        local norm = norm2 ^ 0.5
+        dirX = dirX/norm
+        dirY = dirY/norm
+    else
+        dirX = 0
+        dirY = 0
+    end
+
+    if randomness ~= 0 then
+        local arg = math.random() * 2 * math.pi
+        local rnd_len = math.random()
+        dirX = dirX*(1-randomness) + math.cos(arg)*rnd_len*randomness
+        dirY = dirY*(1-randomness) + math.sin(arg)*rnd_len*randomness
+    end
+
+    return dirX*speed, dirY*speed
+end
+
+local function require_motion_component(entity)
+    local motion = entity_dict.get(global.motion_components, entity)
+    if motion == nil then
+        motion = {
+            vx = 0,
+            vy = 0
+        }
+        entity_dict.put(global.motion_components, entity, motion)
+    end
+    return motion
+end
+
+local function apply_recoil(event, amount, randomness)
     local source = event.source_entity
     if source == nil or not source.valid then return end
 
     local src_pos = source.position
-    local tgt_pos
-    if event.target_entity then
-        -- Note: if target_entity ~= nil, then the event has no target_position
-        tgt_pos = event.target_entity.position
-    else
-        tgt_pos = event.target_position
-    end
+    local tgt_pos = event.target_position or event.target_entity.position
 
     if src_pos.x == tgt_pos.x and src_pos.y == tgt_pos.y then
         --[[
@@ -61,30 +97,31 @@ local function apply_recoil(event, amount)
         tgt_pos = shooting_state.position
     end
 
-    -- TL;DR: calculate displacement vector from target to source, 
-    -- then scale its length to amount 
-    local dx = src_pos.x - tgt_pos.x
-    local dy = src_pos.y - tgt_pos.y
-    local norm = (dx*dx + dy*dy)^0.5
-    if norm < 0.001 then
-        dx = 0
-        dy = 0
-    else
-        dx = dx * amount / norm
-        dy = dy * amount / norm
-    end
+    local vx, vy = make_motion_vector(
+        src_pos.x - tgt_pos.x,
+        src_pos.y - tgt_pos.y,
+        amount, randomness
+    )
+    local motion = require_motion_component(source)
+    motion.vx = motion.vx + vx
+    motion.vy = motion.vy + vy
+end
 
-    local motion = entity_dict.get(global.motion_components, source)
-    if motion == nil then
-        motion = {
-            vx = dx,
-            vy = dy
-        }
-        entity_dict.put(global.motion_components, source, motion)
-    else
-        motion.vx = motion.vx + dx
-        motion.vy = motion.vy + dy
-    end
+local function apply_knockback(event, amount, randomness)
+    local target = event.target_entity
+    if target == nil then return end
+
+    local src_pos = event.source_position or event.source_entity.position
+    local tgt_pos = target.position
+
+    local vx, vy = make_motion_vector(
+        tgt_pos.x - src_pos.x,
+        tgt_pos.y - src_pos.y,
+        amount, randomness
+    )
+    local motion = require_motion_component(target)
+    motion.vx = motion.vx + vx
+    motion.vy = motion.vy + vy
 end
 
 exports.on_init = function()
@@ -157,9 +194,14 @@ exports.on_script_trigger_effect = function(event)
 
     local id = event.effect_id
     local id, sufix = string.sub(id, 1, 4), string.sub(id, 5)
+    local args = text.split(sufix, ";")
 
     if id == "fqcr" then
-        apply_recoil(event, tonumber(sufix))     
+        local amount, randomness = table.unpack(args)
+        apply_recoil(event, tonumber(amount), tonumber(randomness))     
+    elseif id == "fqck" then
+        local amount, randomness = table.unpack(args)
+        apply_knockback(event, tonumber(amount), tonumber(randomness))
     end
 end
 
