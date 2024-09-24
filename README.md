@@ -20,3 +20,8 @@ The `Makefile` contains some utilities which should help with mod development:
 - `make package` creates a ZIP package for the mod.
 - `make install` copies that ZIP package to Factorio's mods folder.
 - `make uninstall` removes the ZIP package from the Factorio's mods folder.
+
+
+## Credits
+
+This project embeds the [pure_lua_SHA library](https://github.com/Egor-Skriptunoff/pure_lua_SHA) written by Egor Skriptunoff (sha2.lua file).
