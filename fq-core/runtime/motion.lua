@@ -7,23 +7,35 @@ local text = require("lib.text")
 ---@field vx number
 ---@field vy number
 
-local vehicle_types = {
-    ["car"] = true,
-    ["spider-vehicle"] = true,
-    ["artillery-wagon"] = true,
-    ["cargo-wagon"] = true,
-    ["fluid-wagon"] = true,
-    ["locomotive"] = true
-}
+local function require_motion_component(entity)
+    local motion = entity_dict.get(global.motion_components, entity)
+    if motion == nil then
+        motion = {
+            vx = 0,
+            vy = 0
+        }
+        entity_dict.put(global.motion_components, entity, motion)
+    end
+    return motion
+end
+exports.require_motion_component = require_motion_component
 
----@param dirX number
----@param dirY number
+---@param entity LuaEntity?
+---@param away_from LuaEntity|MapPosition
 ---@param speed number
 ---@param randomness number
----@return number vx
----@return number vy
-local function make_motion_vector(dirX, dirY, speed, randomness)
-    
+local function apply_recoil(entity, away_from, speed, randomness)
+
+    if entity == nil then return end
+    if not entity.valid then return end
+    if away_from.valid == false then return end
+
+    local pos = entity.position
+    if away_from.valid ~= nil then away_from = away_from.position end
+
+    local dirX = pos.x - (away_from.x or away_from[1])
+    local dirY = pos.y - (away_from.y or away_from[2])
+
     -- normalize [dirX, dirY]
     local norm2 = dirX*dirX + dirY*dirY
     if norm2 > 0.000001 then
@@ -42,87 +54,11 @@ local function make_motion_vector(dirX, dirY, speed, randomness)
         dirY = dirY*(1-randomness) + math.sin(arg)*rnd_len*randomness
     end
 
-    return dirX*speed, dirY*speed
+    local component = require_motion_component(entity)
+    component.vx = component.vx + dirX * speed
+    component.vy = component.vy + dirY * speed
 end
-
-local function require_motion_component(entity)
-    local motion = entity_dict.get(global.motion_components, entity)
-    if motion == nil then
-        motion = {
-            vx = 0,
-            vy = 0
-        }
-        entity_dict.put(global.motion_components, entity, motion)
-    end
-    return motion
-end
-
-local function apply_recoil(event, amount, randomness)
-    local source = event.source_entity
-    if source == nil or not source.valid then return end
-
-    local src_pos = source.position
-    local tgt_pos = event.target_position or event.target_entity.position
-
-    if src_pos.x == tgt_pos.x and src_pos.y == tgt_pos.y then
-        --[[
-            Someone didn't read the documentation and used recoil as a source_effect.
-            (or didn't update past FQ Core 0.1.0)
-            (or we just got extremely unlucky)
-
-            The problem here is that tgt_pos == src_pos for source effects,
-            so we can't use them to compute recoil direction.
-        ]]--
-        log(
-            "DEPRECATION: Using trigger_effect.recoil as a source_effect is deprecated. " .. 
-            "Use it as target_effect instead (recoil amount = "..(amount*60)..")"
-        )
-        --[[
-            Workaround used in FQ Core 0.1.0.
-            Only works on characters and vehicles in which the driver is shooting.
-            Retained for backwards compatibility.
-
-            TODO: remove this in FQ Core 1.0.0
-        ]]--
-        local shooting_state
-        if source.type == "character" then 
-            shooting_state = source.shooting_state
-        elseif vehicle_types[source.type] then
-            local driver = source.get_driver()
-            if driver == nil then return end
-            if driver.type ~= "character" then return end
-            shooting_state = driver.shooting_state
-        end
-        if shooting_state == nil then return end
-        tgt_pos = shooting_state.position
-    end
-
-    local vx, vy = make_motion_vector(
-        src_pos.x - tgt_pos.x,
-        src_pos.y - tgt_pos.y,
-        amount, randomness
-    )
-    local motion = require_motion_component(source)
-    motion.vx = motion.vx + vx
-    motion.vy = motion.vy + vy
-end
-
-local function apply_knockback(event, amount, randomness)
-    local target = event.target_entity
-    if target == nil then return end
-
-    local src_pos = event.source_position or event.source_entity.position
-    local tgt_pos = target.position
-
-    local vx, vy = make_motion_vector(
-        tgt_pos.x - src_pos.x,
-        tgt_pos.y - src_pos.y,
-        amount, randomness
-    )
-    local motion = require_motion_component(target)
-    motion.vx = motion.vx + vx
-    motion.vy = motion.vy + vy
-end
+exports.apply_recoil = apply_recoil
 
 exports.on_init = function()
     global.motion_components = entity_dict.new()
@@ -198,10 +134,20 @@ exports.on_script_trigger_effect = function(event)
 
     if id == "fqcr" then
         local amount, randomness = table.unpack(args)
-        apply_recoil(event, tonumber(amount), tonumber(randomness))     
+        apply_recoil(
+            event.source_entity, 
+            event.target_entity or event.target_position, 
+            tonumber(amount), 
+            tonumber(randomness)
+        )
     elseif id == "fqck" then
         local amount, randomness = table.unpack(args)
-        apply_knockback(event, tonumber(amount), tonumber(randomness))
+        apply_recoil(
+            event.target_entity,
+            event.source_entity or event.source_position,
+            tonumber(amount), 
+            tonumber(randomness)
+        )
     end
 end
 

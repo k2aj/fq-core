@@ -10,9 +10,10 @@ Date: TODO
     - Add lib.attack module
     - Add lib.text module
     - Add trigger_effect.knockback
+    - Add remote interface for adding velocity/applying recoil to entities.
     - trigger_effect.recoil should now work on all entities, not just characters and vehicles
     - trigger_effect.recoil can now partially randomize applied recoil vector
   Changes:
-    - Using trigger_effect.recoil as a source_effect is now deprecated
+    - trigger_effect.recoil can no longer be used as a source_effect. Use it as target_effect instead.
   Bugfixes:
     - Fix crash when entities without unit number are deleted from entity_dict.

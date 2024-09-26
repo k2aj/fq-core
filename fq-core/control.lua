@@ -26,3 +26,5 @@ if FQC_TESTING_MODE then
         attack.on_configuration_changed()
     end)
 end
+
+require("runtime.remote")
