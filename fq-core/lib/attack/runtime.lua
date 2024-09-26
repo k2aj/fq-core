@@ -33,7 +33,6 @@ exports.use_attack = use_attack
 ---@field atype "atk-spawn-projectile"
 ---@field name string Name of the projectile prototype to spawn
 ---@field range number Range of the projectile
----@field use fun(atk: AtkSpawnProjectile, args: AttackArgs)
 
 ---@param atk AtkSpawnProjectile
 ---@param args AttackArgs
@@ -57,7 +56,6 @@ end
 ---@class AtkComposite
 ---@field atype "atk-composite"
 ---@field children Attack[]
----@field use fun(atk: AtkComposite, args: AttackArgs)
 
 ---@param atk AtkComposite
 ---@param args AttackArgs
