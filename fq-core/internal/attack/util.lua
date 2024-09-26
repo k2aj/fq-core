@@ -178,7 +178,7 @@ local function get_scope_by_path(cur_scope, path)
 
     local parts = text.split(path, "/")
     for _, part in ipairs(parts) do
-        if part == "." then 
+        if part == "." or #part == 0 then 
             --no op
         elseif part == ".." then
             -- ".." stops at root (similar to how file systems work)
