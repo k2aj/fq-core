@@ -50,6 +50,8 @@ attack_impl["atk-spawn-projectile"] = function(atk, args)
     }
     if projectile then
         projectile.orientation = vec2.rotvec_to_orientation(args.avx, args.avy)
+        local entities = args.scope.entities
+        entities[#entities+1] = projectile
     end
 end
 
@@ -65,7 +67,7 @@ attack_impl["atk-composite"] = function(atk, args)
     end
 end
 
----@class AtkRandom
+---@class AtkRandom: Attack
 ---@field atype "atk-random"
 ---@field children Attack[]
 
@@ -168,6 +170,51 @@ attack_impl["pre-random-rotation"] = function(atk, args)
     args.ary = old_ary
 end
 
+
+---@class PreScope: UnaryModifier
+---@field atype "pre-scope"
+---@field name string
+
+---@param atk PreScope
+---@param args AttackArgs
+attack_impl["pre-scope"] = function(atk, args)
+
+    local old_scope = args.scope
+
+    ---@type AttackScope
+    local new_scope = {
+        name = atk.name,
+        parent = old_scope,
+        children = {},
+        entities = {}
+    }
+    --[[
+        Any sibling scope with the same name will get shadowed.
+        IMHO this is the most sane behavior in case of scope collisions.
+    ]]--
+    old_scope.children[new_scope.name] = new_scope
+    
+    args.scope = new_scope
+    use_attack(atk.next, args)
+    args.scope = old_scope
+end
+
+--#endregion
+
+--#region Postmodifiers
+
+---@class PostLogEntityCount
+---@field scope string Path to the used scope
+
+---@param atk PostLogEntityCount
+---@param args AttackArgs
+attack_impl["post-log-entity-count"] = function(atk, args)
+    local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    local n = 0
+    if scope ~= nil then n = #scope.entities end
+    text.logof("Found ",n," entities")
+end
+
 --#endregion
 
 --#endregion
@@ -241,7 +288,12 @@ exports.on_script_trigger_effect = function(event)
         sx = src_pos.x, sy = src_pos.y,
         tx = tgt_pos.x, ty = tgt_pos.y,
         src = src,
-        tgt = event.target_entity
+        tgt = event.target_entity,
+        scope = {
+            name = "/",
+            children = {},
+            entities = {}
+        }
     }
 
     use_attack(

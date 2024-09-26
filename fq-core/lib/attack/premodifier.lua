@@ -1,5 +1,6 @@
 local vec2 = require("__fq-core__/lib/vec2")
 local text = require("__fq-core__/lib/text")
+local atk_util = require("__fq-core__/internal/attack/util")
 
 local premodifier = {}
 
@@ -81,9 +82,29 @@ premodifier.pattern = function(args)
 end
 
 ---@return UnaryModifier
-premodifier.random_rotation = function() return {
+premodifier.random_rotation = function(args) return {
     atype = "pre-random-rotation",
-    next = nil
+    next = args.next
 } end
+
+---Creates a scope, which captures any entities created by the modified attack.
+---
+---This scope can then be used to pass entities to postmodifiers.
+---@param args table
+---@param args.next Atack? Next attack used by this premodifier.
+---@param args.name string Name of the created scope.
+---@return PreScope
+function premodifier.scope(args)
+    local name = args.name or error("Missing required parameter: name")
+    local ok, errmsg = atk_util.validate_scope_name(name)
+    if not ok then
+        error("Invalid scope name: "..errmsg)
+    end
+    return {
+        atype = "pre-scope",
+        name = name,
+        next = nil
+    } 
+end
 
 return premodifier

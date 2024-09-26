@@ -1,6 +1,14 @@
 local text = require("__fq-core__/lib/text")
 local sha2 = require("__fq-core__/internal/sha2")
 
+---Stores entity references used by postmodifiers.
+---@class AttackScope
+---@field name string                       Name of the scope. Name "/" is reserved for root scope.
+---@field parent AttackScope?               The parent scope.
+---@field children {[string]: AttackScope}  The child scopes.
+---@field entities LuaEntity[]              Entities captured by the scope.
+
+
 ---@class AttackArgs
 ---@field force ForceIdentification Force using the attack.
 ---@field surface LuaSurface 
@@ -19,6 +27,8 @@ local sha2 = require("__fq-core__/internal/sha2")
 ---@field ary number Y coordinate of the attack's rotation vector.
 ---@field avx number X coordinate of the attack velocity vector.
 ---@field avy number Y coordinate of the attack velocity vector.
+---
+---@field scope AttackScope Scope used for capturing entities.
 
 
 
@@ -39,13 +49,15 @@ end
 ---@return boolean # true if attack is a UnaryModifier
 local function is_unary_modifier(attack)
     return is_attack(attack) and (
-        text.starts_with(attack.atype, "pre-") or 
-        text.starts_with(attack.atype, "post-")
+        text.starts_with(attack.atype, "pre-")
     )
 end
 
 local function is_leaf(attack)
-    return is_attack(attack) and text.starts_with(attack.atype, "atk-")
+    return is_attack(attack) and (
+        text.starts_with(attack.atype, "atk-") or
+        text.starts_with(attack.atype, "post-")
+    )
 end
 
 -- NOTE: This must be global. Using `local` causes it to get set to nil for whatever reason.
@@ -123,6 +135,62 @@ local function CONTROL_get_attack_registry()
     return registry
 end
 
+local function validate_scope_name(name)
+    if #name == 0 then
+        return false, "Scope name can not be empty"
+    elseif name == "." or name == ".." then
+        return false, "Scope can not use reserved name: `"..name..","
+    elseif string.find(name, "/") then
+        return false, "Scope name can not contain slashes"
+    else
+        return true, ""
+    end
+end
+
+---@param scope AttackScope
+---@return AttackScope
+local function get_root_scope(scope)
+    local parent = scope.parent
+    if parent == nil then
+        return scope
+    else
+        return get_root_scope(parent)
+    end
+end
+
+---@param cur_scope AttackScope
+---@param path string
+---@return AttackScope?
+local function get_scope_by_path(cur_scope, path)
+
+    -- Probably most common case
+    local child = cur_scope.children[path]
+    if child then return child end
+
+    if path == "." then return cur_scope end
+    if path == ".." then return cur_scope.parent end
+
+    -- Handle absolute paths
+    if string.sub(path, 1, 1) == "/" then
+        path = string.sub(path, 2)
+        cur_scope = get_root_scope(cur_scope)
+    end
+
+    local parts = text.split(path, "/")
+    for _, part in ipairs(parts) do
+        if part == "." then 
+            --no op
+        elseif part == ".." then
+            -- ".." stops at root (similar to how file systems work)
+            cur_scope = cur_scope.parent or cur_scope
+        else
+            cur_scope = cur_scope.children[part]
+        end
+        if cur_scope == nil then return nil end
+    end
+
+    return cur_scope
+end
 
 return {
     is_attack = is_attack,
@@ -130,6 +198,8 @@ return {
     is_leaf = is_leaf,
     set_namespace = set_namespace,
     get_effect_id_prefix = get_effect_id_prefix,
+    get_scope_by_path = get_scope_by_path,
+    validate_scope_name = validate_scope_name,
     DATA_register_attack = DATA_register_attack,
     CONTROL_get_attack_registry = CONTROL_get_attack_registry
 }

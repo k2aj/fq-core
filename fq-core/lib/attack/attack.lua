@@ -27,13 +27,12 @@ attack.random = function(children)
 end
 
 ---Combines multiple attacks and modifiers into one attack.
----@param ... Attack
+---@param attacks Attack[]
 ---@return Attack
-attack.chain = function(...)
-    local args = {...}
+attack.chain = function(attacks)
     local children = {}
-    for i=#args,1,-1 do
-        local attack = args[i]
+    for i=#attacks,1,-1 do
+        local attack = attacks[i]
         if atk_util.is_unary_modifier(attack) then
             local child = children[#children]
             if child == nil then 
@@ -46,6 +45,11 @@ attack.chain = function(...)
         else
             error("attack.chain: non-attack value is not allowed: "..serpent.line(attack))
         end
+    end
+    for i=1,math.floor(#children/2) do
+        local tmp = children[i]
+        children[i] = children[#children+1-i]
+        children[#children+1-i] = tmp
     end
     return {
         atype = "atk-composite",
