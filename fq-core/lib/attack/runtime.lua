@@ -1,12 +1,16 @@
-local text = require("lib.text")
-local vec2 = require("lib.vec2")
-local atk_util = require("internal.attack.util")
+local atk_util = require("__fq-core__/internal/attack/util")
+local text = require("__fq-core__/lib/text")
+local vec2 = require("__fq-core__/lib/vec2")
+
+--[[ How to integrate the attack system into your mod:
+
+    1. Call `.init{namespace = "..."}` once at the beginning of `data.lua` and `control.lua`
+    2. Forward events received in `control.lua` to event handlers exported by this module (any function that starts with `on_`)
+]]--
 
 local exports = {}
 
---#region Attack implementations
-
----@type {[string]: fun(atk: Attack, args: AttackArgs)}
+---@type {[string]: AttackImpl}
 local attack_impl = {}
 
 ---@param atk Attack
@@ -19,6 +23,9 @@ local function use_attack(atk, args)
         impl(atk, args)
     end
 end
+exports.use_attack = use_attack
+
+--#region Builtin attack implementations
 
 --#region Primary/leaf attacks
 
@@ -157,6 +164,37 @@ end
 
 --#endregion
 
+---@type string
+local attack_effect_id_prefix = nil
+
+---Initializes the attack system.
+---
+---Must be called once at the beginning of:
+--- - `data.lua` before any attacks are created.
+--- - `control.lua` before any attacks are used.
+--- 
+---The `namespace` argument should be different for each mod using the attack system.
+---Namespace collisions are likely to cause bad things to happen.
+---Consider using the ID of your mod as the namespace.
+--- 
+---@param args table
+---@param args.namespace string Attack namespace used by your mod.
+---@param args.extensions {[string]: AttackImpl}[]? Lua modules containing attack extensions you want to use. 
+exports.init = function(args)
+    local namespace = args.namespace or error("Missing required argument: 'namespace'")
+    local extensions = args.extensions or {}
+
+    atk_util.set_namespace(namespace)
+
+    attack_effect_id_prefix = atk_util.get_effect_id_prefix()
+
+    for _, extension in ipairs(extensions) do
+        for atype, impl in pairs(extension) do
+            attack_impl[atype] = impl
+        end
+    end
+end
+
 --#region Event handlers
 
 local attack_registry
@@ -177,7 +215,7 @@ exports.on_configuration_changed = function()
 end
 
 exports.on_script_trigger_effect = function(event)
-    if not text.starts_with(event.effect_id, "fqca") then return end
+    if not text.starts_with(event.effect_id, attack_effect_id_prefix) then return end
 
     local src = event.source_entity
     local src_pos = event.source_position or src.position

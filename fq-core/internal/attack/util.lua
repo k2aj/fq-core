@@ -28,6 +28,8 @@ local sha2 = require("__fq-core__/internal/sha2")
 ---@class UnaryModifier: Attack
 ---@field next Attack?
 
+---@alias AttackImpl fun(atk: Attack, args: AttackArgs)
+
 
 local function is_attack(value)
     return type(value) == "table" and type(value.atype) == "string"
@@ -46,13 +48,30 @@ local function is_leaf(attack)
     return is_attack(attack) and text.starts_with(attack.atype, "atk-")
 end
 
-local STORAGE_ITEM_ID = "fqc-attack-registry-storage-IMPLEMENTATION-DEFINED-MAGIC-DO-NOT-TOUCH-OR-USE-IN-GAME-EVER"
+-- NOTE: This must be global. Using `local` causes it to get set to nil for whatever reason.
+-- Because who needs a proper module system when you can have TABLES.
+-- I hate this language.
+fqc_attack_namespace = nil
+
+local function set_namespace(str)
+    fqc_attack_namespace = str
+end
+local function get_effect_id_prefix()
+    return "fqca-"..fqc_attack_namespace.."-"
+end
+
+local function get_storage_item_id()
+    if fqc_attack_namespace == nil then
+        error("Attack namespace not set. Did you forget to call __fq-core__.lib.attack.init()?")
+    end
+    return fqc_attack_namespace .. "-storage-IMPLEMENTATION-DEFINED-MAGIC-DO-NOT-TOUCH-OR-USE-IN-GAME-EVER"
+end
 
 local function DATA_get_attack_storage()
-    local item = data.raw.ammo[STORAGE_ITEM_ID]
+    local item = data.raw.ammo[get_storage_item_id()]
     if not item then
         item = util.table.deepcopy(data.raw.ammo["shotgun-shell"])
-        item.name = STORAGE_ITEM_ID
+        item.name = get_storage_item_id()
         item.ammo_type.action = {{
             type = "direct",
             action_delivery = {{
@@ -73,7 +92,7 @@ local registered_attack_hashes = {}
 local function DATA_register_attack(attack)
 
     local attack_str = serpent.dump(attack)
-    local effect_id = "fqca" .. sha2.md5(attack_str)
+    local effect_id = get_effect_id_prefix() .. sha2.md5(attack_str)
 
     if registered_attack_hashes[effect_id] then return effect_id end
     registered_attack_hashes[effect_id] = true
@@ -87,7 +106,7 @@ end
 ---@return {[string]: Attack}
 local function CONTROL_get_attack_registry()
     --log("THE ACTION IS: "..serpent.dump(game.item_prototypes[STORAGE_ITEM_ID].get_ammo_type().action))
-    local storage = game.item_prototypes[STORAGE_ITEM_ID].get_ammo_type().action[1].action_delivery[1].source_effects
+    local storage = game.item_prototypes[get_storage_item_id()].get_ammo_type().action[1].action_delivery[1].source_effects
     local registry = {}
     if #storage % 2 ~= 0 then
         error("Corrupted attack storage: ", serpent.dump(storage))
@@ -109,6 +128,8 @@ return {
     is_attack = is_attack,
     is_unary_modifier = is_unary_modifier,
     is_leaf = is_leaf,
+    set_namespace = set_namespace,
+    get_effect_id_prefix = get_effect_id_prefix,
     DATA_register_attack = DATA_register_attack,
     CONTROL_get_attack_registry = CONTROL_get_attack_registry
 }

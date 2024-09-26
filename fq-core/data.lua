@@ -1,7 +1,13 @@
+require("globals")
+
 local atk = require("lib.attack.attack")
 local pre = require("lib.attack.premodifier")
 local pattern = require("lib.attack.pattern")
+local atk_runtime = require("lib.attack.runtime")
 
+if not FQC_TESTING_MODE then return end
+
+atk_runtime.init{namespace = "fqc"}
 
 local heart_curve = pattern.parametric_curve{
     domain = {0, 2*math.pi},
@@ -22,7 +28,6 @@ ammo.ammo_type.action = atk.to_trigger(atk.chain(
     atk.spawn_projectile {name="shotgun-pellet", range=40}
 ))
 data:extend({ammo})
-
 
 
 

@@ -1,5 +1,10 @@
+require("globals")
 local motion = require("runtime.motion")
-local attack = require("runtime.attack")
+local attack = require("lib.attack.runtime")
+
+if FQC_TESTING_MODE then
+    attack.init{namespace = "fqc"}
+end
 
 script.on_init(function()
     motion.on_init()
@@ -11,9 +16,13 @@ end)
 
 script.on_event(defines.events.on_script_trigger_effect, function(event)
     motion.on_script_trigger_effect(event)
-    attack.on_script_trigger_effect(event)
+    if FQC_TESTING_MODE then
+        attack.on_script_trigger_effect(event)
+    end
 end)
 
-script.on_configuration_changed(function(event)
-    attack.on_configuration_changed()
-end)
+if FQC_TESTING_MODE then
+    script.on_configuration_changed(function(event)
+        attack.on_configuration_changed()
+    end)
+end
