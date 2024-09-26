@@ -7,6 +7,7 @@ Date: 2024-09-14
 Version: 0.2.0
 Date: TODO
   Features:
+    - Add lib.attack module
     - Add lib.text module
     - Add trigger_effect.knockback
     - trigger_effect.recoil should now work on all entities, not just characters and vehicles

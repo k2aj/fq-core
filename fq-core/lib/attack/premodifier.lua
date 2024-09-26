@@ -3,23 +3,6 @@ local text = require("__fq-core__/lib/text")
 
 local premodifier = {}
 
----@class PreRepeats: UnaryModifier
----@field atype "pre-repeats"
----@field min_count integer
----@field max_count integer
----@field use fun(atk: PreRepeats, args: AttackArgs)
-
----@param atk PreRepeats
----@param args AttackArgs
-local function PreRepeats_impl(atk, args)
-    local next = atk.next
-    if next == nil then return end
-
-    for _=1,math.random(atk.min_count, atk.max_count) do
-        next.use(next, args)
-    end
-end
-
 ---Premodifier which repeats the next attack several times.
 ---
 ---You must provide either "count" or "min_count, max_count" in arguments.
@@ -51,33 +34,7 @@ premodifier.repeats = function(args)
         next = next,
         min_count = min_count,
         max_count = max_count,
-        use = PreRepeats_impl
     }
-end
-
----@class PreAddVelocity: UnaryModifier
----@field atype "pre-add-velocity"
----@field amount number
----@field randomness number
----@field use fun(atk: PreAddVelocity, args: AttackArgs)
-
----@param atk PreAddVelocity
----@param args AttackArgs
-local function PreAddVelocity_impl(atk, args)
-    local next = atk.next
-    if next == nil then return end
-
-    local old_avx, old_avy = args.avx, args.avy
-
-    local davx, davy = vec2.mul(args.arx, args.ary, atk.amount, atk.amount)
-    davx, davy = vec2.randomize(davx, davy, atk.randomness)
-
-    args.avx, args.avy = vec2.add(
-        old_avx, old_avy,
-        davx, davy
-    )
-    next.use(next, args)
-    args.avx, args.avy = old_avx, old_avy
 end
 
 ---Premodifier which increases velocity of the next attack.
@@ -101,61 +58,7 @@ premodifier.add_velocity = function(args)
         next = next,
         amount = amount,
         randomness = randomness,
-        use = PreAddVelocity_impl
     }
-end
-
-
-
----@class PrePattern: UnaryModifier
----@field atype "pre-pattern"
----@field positions number[][]
----@field velocities number[][]
----@field use fun(atk: PrePattern, args: AttackArgs)
-
----@param atk PrePattern
----@param args AttackArgs
-local function PrePattern_impl(atk, args)
-
-    --text.logof("BRUH BRUH BRUH BRUH BRUH", serpent.line(atk))
-
-    local next = atk.next
-    if next == nil then return end
-
-    local positions = atk.positions
-    local velocities = atk.velocities
-
-    text.logof(serpent.line(positions))
-    text.logof(serpent.line(velocities))
-
-    local old_arx = args.arx
-    local old_ary = args.ary
-    local old_avx = args.avx
-    local old_avy = args.avy
-    local old_ax = args.ax
-    local old_ay = args.ay
-
-
-    for i=1,math.max(#positions, #velocities) do
-        local dpos = positions[i] or positions[1] or {0,0}
-        local dvel = velocities[i] or velocities[1] or {0,0}
-        dpos = table.pack(vec2.cmul(args.arx, args.ary, dpos[1], dpos[2]))
-        dvel = table.pack(vec2.cmul(args.arx, args.ary, dvel[1], dvel[2]))
-        --local darx, dary = vec2.normalize_or(dvel[1], dvel[2], 1, 0)
-
-        args.ax, args.ay = vec2.add(old_ax, old_ay, dpos[1], dpos[2])
-        args.avx, args.avy = vec2.add(old_avx, old_avy, dvel[1]/60, dvel[2]/60)
-        --args.arx, args.ary = vec2.cmul(old_arx, old_ary, darx, dary)
-
-        next.use(next, args)
-    end
-
-    args.arx = old_arx
-    args.ary = old_ary
-    args.avx = old_avx
-    args.avy = old_avy
-    args.ax = old_ax
-    args.ay = old_ay
 end
 
 ---Premodifier which arranges projectiles into a pattern.
@@ -174,27 +77,13 @@ premodifier.pattern = function(args)
         next = next,
         positions = positions,
         velocities = velocities,
-        use = PrePattern_impl
     }
 end
 
-premodifier.random_rotation = {
+---@return UnaryModifier
+premodifier.random_rotation = function() return {
     atype = "pre-random-rotation",
-    next = nil,
-    use = function(atk, args)
-        if atk.next == nil then return end
-
-        local old_arx = args.arx
-        local old_ary = args.ary
-
-        local drx, dry = vec2.polar(2*math.pi*math.random(), 1)
-        args.arx, args.ary = vec2.cmul(drx, dry, old_arx, old_ary)
-
-        atk.next.use(atk.next, args)
-
-        args.arx = old_arx
-        args.ary = old_ary
-    end
-}
+    next = nil
+} end
 
 return premodifier
