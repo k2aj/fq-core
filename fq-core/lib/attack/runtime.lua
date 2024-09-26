@@ -65,6 +65,16 @@ attack_impl["atk-composite"] = function(atk, args)
     end
 end
 
+---@class AtkRandom
+---@field atype "atk-random"
+---@field children Attack[]
+
+---@param atk AtkRandom
+---@param args AttackArgs
+attack_impl["atk-random"] = function(atk, args)
+    use_attack(atk.children[math.random(1, #atk.children)], args)
+end
+
 --#endregion
 
 --#region Premodifiers

@@ -16,6 +16,16 @@ attack.spawn_projectile = function(args)
     }
 end
 
+---Uses one of the child attacks, selected at random.
+---@param children Attack[]
+---@return AtkRandom
+attack.random = function(children)
+    return {
+        atype = "atk-random",
+        children = children
+    }
+end
+
 ---Combines multiple attacks and modifiers into one attack.
 ---@param ... Attack
 ---@return Attack

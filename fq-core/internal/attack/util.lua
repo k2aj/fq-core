@@ -91,7 +91,7 @@ local registered_attack_hashes = {}
 ---@return string
 local function DATA_register_attack(attack)
 
-    local attack_str = serpent.dump(attack)
+    local attack_str = serpent.dump(attack, {valtypeignore = {["function"] = true}})
     local effect_id = get_effect_id_prefix() .. sha2.md5(attack_str)
 
     if registered_attack_hashes[effect_id] then return effect_id end
@@ -109,7 +109,7 @@ local function CONTROL_get_attack_registry()
     local storage = game.item_prototypes[get_storage_item_id()].get_ammo_type().action[1].action_delivery[1].source_effects
     local registry = {}
     if #storage % 2 ~= 0 then
-        error("Corrupted attack storage: ", serpent.dump(storage))
+        error("Corrupted attack storage: ", serpent.block(storage))
     end
     for i = 1,#storage,2 do
         local effect_id = storage[i].effect_id
