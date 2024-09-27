@@ -62,6 +62,24 @@ premodifier.add_velocity = function(args)
     }
 end
 
+---Rotates the next attack's velocity and rotation vectors by a given angle.
+---@param args {angle: number, pure: boolean?, next: Attack?}
+---@param args.next Attack? Next attack used by this premodifier.
+---@param args.angle number Rotation angle (clockwise) [rad]
+---@param args.pure boolean?
+---@return PreRotate
+premodifier.rotate = function(args)
+    local pure = args.pure
+    if pure == nil then pure = true end
+    return {
+        atype = "pre-rotate",
+        next = args.next,
+        pure = pure,
+        rx = math.cos(args.angle),
+        ry = math.sin(args.angle)
+    }
+end
+
 ---Premodifier which arranges projectiles into a pattern.
 ---
 ---@param args table

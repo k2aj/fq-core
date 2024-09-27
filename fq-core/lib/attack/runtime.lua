@@ -117,6 +117,25 @@ attack_impl["pre-add-velocity"] = function(atk, args)
     args.avx, args.avy = old_avx, old_avy
 end
 
+---@class PreRotate: UnaryModifier
+---@field atype "pre-rotate"
+---@field rx number
+---@field ry number
+---@field pure boolean
+
+---@param atk PreRotate
+---@param args AttackArgs
+attack_impl["pre-rotate"] = function(atk, args)
+    local rx, ry = atk.rx, atk.ry
+    args.arx, args.ary = vec2.cmul(args.arx, args.ary, rx, ry)
+    args.avx, args.avy = vec2.cmul(args.avx, args.avy, rx, ry)
+    use_attack(atk.next, args)
+    if atk.pure then
+        args.arx, args.ary = vec2.cmul(args.arx, args.ary, rx, -ry)
+        args.avx, args.avy = vec2.cmul(args.avx, args.avy, rx, -ry)
+    end
+end
+
 ---@class PrePattern: UnaryModifier
 ---@field atype "pre-pattern"
 ---@field positions number[][]
