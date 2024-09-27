@@ -107,4 +107,57 @@ function premodifier.scope(args)
     } 
 end
 
+---Creates a standalone timer, which fires the next attack periodically.
+---
+---@param args {delay: integer?, period: integer?, limit: integer?, moving: boolean?, next: Attack?}
+---@param args.delay  integer   Number of ticks before the first firing. Defaults to `period`.
+---@param args.period integer   Number of ticks between each next firing.
+---@param args.limit  integer   Maximum number of times the timer can fire. Defaults to `1` if period is not set.
+---@param args.moving boolean   Does this timer move or stay in place?
+---@return PreStandaloneTimer
+function premodifier.timer(args)
+
+    local period = args.period
+    local limit = args.limit
+    local delay = args.delay
+
+    if not period and not delay then
+        error("Missing required argument: 'period' or 'delay'")
+    end
+
+    if period and not limit then
+        error("Periodic timer must have a limit.")
+    end
+    if limit and not period then
+        error("Timer with a limit must have a period")
+    end
+
+    if period and period < 1 then
+        error("Timer period can not be smaller than 1 tick")
+    end
+    if delay and delay < 0 then
+        error("Timer delay can not be negative")
+    end
+    if limit and limit < 1 then
+        error("Timer limit can not be smaller than 1")
+    end
+
+    if delay and not period and not limit then
+        limit = 1
+        period = 1
+    end
+    if period and not delay then
+        delay = period
+    end
+
+    return {
+        atype = "pre-standalone-timer",
+        period = period,
+        limit = limit,
+        initial_delay = delay,
+        moving = args.moving or false,
+        next = args.next
+    }
+end
+
 return premodifier

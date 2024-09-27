@@ -55,6 +55,10 @@ attack_impl["atk-spawn-projectile"] = function(atk, args)
     end
 end
 
+--#endregion
+
+--#region Composites etc.
+
 ---@class AtkComposite
 ---@field atype "atk-composite"
 ---@field children Attack[]
@@ -199,6 +203,83 @@ attack_impl["pre-scope"] = function(atk, args)
     args.scope = old_scope
 end
 
+---@class StandaloneTimer
+---@field period integer    Number of ticks between timer firing.
+---@field limit integer     How many times the timer can fire.
+---@field cycle integer     1 for first firing, `limit` for last firing. Increments after firing.
+---@field next_tick integer Next tick when this timer will fire.
+---@field moving boolean    Does this timer move or stay in place?
+---@field attack Attack     Attack fired by the timer.
+---@field args AttackArgs   Args passed to `attack`. The timer injects additional field named `timer` into `args`.
+
+local function update_standalone_timers()
+
+    ---@type StandaloneTimer[]
+    local timers = global.standalone_timers
+    local t = game.tick
+
+    local n_remaining = 0
+    for _, timer in ipairs(timers) do
+        if timer.next_tick <= t then
+            use_attack(timer.attack, timer.args)
+
+            timer.cycle = timer.cycle+1
+            if timer.cycle > timer.limit then
+                goto continue    
+            end
+            
+            local args = timer.args
+            local period = timer.period
+            timer.next_tick = timer.next_tick + period
+            if timer.moving then
+                args.ax = args.ax + args.avx * period
+                args.ay = args.ay + args.avy * period
+            end
+        end
+        
+        n_remaining = n_remaining+1
+        timers[n_remaining] = timer
+
+        ::continue::
+    end
+    for i=#timers,n_remaining+1,-1 do
+        timers[i] = nil
+    end
+end
+
+---@class PreStandaloneTimer: UnaryModifier
+---@field atype "pre-standalone-timer"
+---@field period integer            Number of ticks between timer firing.
+---@field limit integer             How many times the timer can fire.
+---@field initial_delay integer     Initial delay before first firing.
+---@field moving boolean            Does this timer move or stay in place?
+
+---@param atk PreStandaloneTimer
+---@param args AttackArgs
+attack_impl["pre-standalone-timer"] = function(atk, args)
+
+    args = atk_util.copy_args(args)
+
+    if atk.moving then
+        args.ax = args.ax + args.avx * atk.initial_delay
+        args.ay = args.ay + args.avy * atk.initial_delay
+    end
+
+    ---@type StandaloneTimer
+    local timer = {
+        period = atk.period,
+        limit = atk.limit,
+        cycle = 1,
+        next_tick = game.tick + atk.initial_delay,
+        moving = atk.moving,
+        attack = atk.next,
+        args = args
+    }
+    timer.args.timer = timer
+
+    table.insert(global.standalone_timers, timer)
+end
+
 --#endregion
 
 --#region Postmodifiers
@@ -251,6 +332,14 @@ exports.init = function(args)
 end
 
 --#region Event handlers
+
+function exports.on_init()
+    global.standalone_timers = {}
+end
+
+function exports.on_tick()
+    update_standalone_timers()
+end
 
 local attack_registry
 local function get_attack_registry()

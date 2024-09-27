@@ -29,8 +29,18 @@ local sha2 = require("__fq-core__/internal/sha2")
 ---@field avy number Y coordinate of the attack velocity vector.
 ---
 ---@field scope AttackScope Scope used for capturing entities.
+---@field timer StandaloneTimer? Timer used for firing this attack (if any)
 
-
+---@param args AttackArgs
+---@return AttackArgs
+local function copy_args(args)
+    -- Shallow copy is intentional
+    local result = {}
+    for k,v in pairs(args) do
+        result[k] = v
+    end
+    return result
+end
 
 ---@class Attack
 ---@field atype string
@@ -200,6 +210,7 @@ return {
     get_effect_id_prefix = get_effect_id_prefix,
     get_scope_by_path = get_scope_by_path,
     validate_scope_name = validate_scope_name,
+    copy_args = copy_args,
     DATA_register_attack = DATA_register_attack,
     CONTROL_get_attack_registry = CONTROL_get_attack_registry
 }

@@ -14,6 +14,8 @@ atk_runtime.init{namespace = "fqc"}
 local ammo = util.copy(data.raw.ammo["shotgun-shell"])
 ammo.name = "custom-attack-shotgun-shell"
 ammo.ammo_type.action = atk.to_trigger(atk.chain{
+
+    pre.timer{delay = 30, period = 15, limit = 5},
     pre.pattern          {positions={{1,0}}},
     pre.add_velocity     {amount=30, randomness=0.2},
     pre.random_rotation  {},

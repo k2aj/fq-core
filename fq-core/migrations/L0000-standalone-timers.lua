@@ -1,0 +1,1 @@
+global.standalone_timers = {}
