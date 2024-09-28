@@ -344,7 +344,7 @@ end
 local function update_standalone_timers()
 
     ---@type StandaloneTimer[]
-    local timers = global.standalone_timers
+    local timers = global.fqc_standalone_timers
     local t = game.tick
 
     local n_remaining = 0
@@ -406,7 +406,7 @@ attack_impl["pre-standalone-timer"] = function(atk, args)
     }
     timer.args.timer = timer
 
-    table.insert(global.standalone_timers, timer)
+    table.insert(global.fqc_standalone_timers, timer)
 end
 
 ---@class PreSlide: UnaryModifier
@@ -593,8 +593,18 @@ end
 
 --#region Event handlers
 
+local function init_global_tables()
+    --[[
+        Note: these need to be namespaced, because lib.attack.runtime
+        doesn't run in FQ Core's Lua state.
+
+        It runs in another mod's Lua state instead.
+    ]]--
+    global.fqc_standalone_timers = global.fqc_standalone_timers or {}
+end
+
 function exports.on_init()
-    global.standalone_timers = {}
+    init_global_tables()
 end
 
 function exports.on_tick()
@@ -604,18 +614,19 @@ end
 local attack_registry
 local function get_attack_registry()
     if not attack_registry then 
-        attack_registry = global.attack_registry 
+        attack_registry = global.fqc_attack_registry 
     end
     if not attack_registry then 
         attack_registry = atk_util.CONTROL_get_attack_registry()
-        global.attack_registry = attack_registry
+        global.fqc_attack_registry = attack_registry
     end
     return attack_registry
 end
 
 exports.on_configuration_changed = function()
+    init_global_tables()
     attack_registry = nil
-    global.attack_registry = nil
+    global.fqc_attack_registry = nil
 end
 
 exports.on_script_trigger_effect = function(event)
