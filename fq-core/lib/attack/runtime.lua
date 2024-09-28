@@ -500,6 +500,105 @@ attack_impl["pre-at-position"] = function(atk, args)
     args.ax, args.ay = old_ax, old_ay
 end
 
+local not_entities_with_health = {
+    "arrow",
+    "artillery-flare",
+    "artillery-projectile",
+    "beam",
+    "character-corpse",
+    "cliff",
+    "corpse",
+    "rail-remnants",
+    "deconstructible-tile-proxy",
+    "entity-ghost",
+    "particle",
+    "leaf-particle",
+    "explosion",
+    "flame-thrower-explosion",
+    "fire",
+    "stream",
+    "flying-text",
+    "highlight-box",
+    "item-entity",
+    "item-request-proxy",
+    "particle-source",
+    "projectile",
+    "resource",
+    "rocket-silo-rocket",
+    "rocket-silo-rocket-shadow",
+    "smoke",
+    "smoke-with-trigger",
+    "speech-bubble",
+    "sticker",
+    "tile-ghost"
+}
+
+---Higher number = priority target.
+---@type {[TargetPriorityFunc]: fun(x: number, y: number, target: LuaEntity): number}
+local target_priority = {
+    ["random"] = function(x,y,tgt) return math.random() end,
+    ["min-distance"] = function(x,y,tgt) 
+        local pos = tgt.position
+        return -vec2.norm2(x, y, pos.x, pos.y)
+    end,
+    ["max-distance"] = function(x,y,tgt)
+        local pos = tgt.position
+        return vec2.norm2(x, y, pos.x, pos.y)
+    end,
+    ["min-health"] = function(x,y,tgt) return -tgt.health end,
+    ["max-health"] = function(x,y,tgt) return tgt.health end,
+    ["min-health-ratio"] = function(x,y,tgt) return -tgt.get_health_ratio() end,
+    ["max-health-ratio"] = function(x,y,tgt) return tgt.get_health_ratio() end
+}
+
+---@class PreFindTarget: UnaryModifier
+---@field atype "pre-find-target"
+---@field range number Target searching radius
+---@field from AttackReferencePoint Where do we start searching?
+---@field priority TargetPriorityFunc
+
+---@param atk PreFindTarget
+---@param args AttackArgs
+attack_impl["pre-find-target"] = function(atk, args)
+
+    local x,y
+    local from = atk.from
+    if from == "attack" then x,y = args.ax, args.ay
+    elseif from == "source" then x,y = args.sx, args.sy
+    else x,y = args.tx, args.ty end
+
+    local candidates = args.surface.find_entities_filtered{
+        position={x,y}, 
+        radius=atk.range,
+
+        invert=true,
+        force=args.force,
+        type=not_entities_with_health
+    }
+
+    local best_target
+    local best_priority = -1000000001
+    local priority_func = target_priority[atk.priority]
+    for _, entity in pairs(candidates) do
+        local priority = priority_func(x,y,entity)
+        if priority > best_priority then
+            best_target = entity
+        end
+    end
+    if best_target == nil then return end
+    local tgt_pos = best_target.position
+
+    local old_tgt = args.tgt
+    local old_tx, old_ty = args.tx, args.ty
+    args.tgt = best_target
+    args.tx, args.ty = tgt_pos.x, tgt_pos.y
+
+    use_attack(atk.next, args)
+
+    args.tgt = old_tgt
+    args.tx, args.ty = old_tx, old_ty
+end
+
 --#endregion
 
 --#region Postmodifiers

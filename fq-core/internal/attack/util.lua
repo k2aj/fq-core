@@ -31,6 +31,20 @@ local sha2 = require("__fq-core__/internal/sha2")
 ---@field scope AttackScope Scope used for capturing entities.
 ---@field timer StandaloneTimer? Timer used for firing this attack (if any)
 
+---@alias TargetPriorityFunc
+---| "random"
+---| "min-distance"
+---| "max-distance"
+---| "min-health"
+---| "max-health"
+---| "min-health-ratio"
+---| "max-health-ratio"
+
+---@alias AttackReferencePoint
+---| "attack"
+---| "source"
+---| "target"
+
 ---@param args AttackArgs
 ---@return AttackArgs
 local function copy_args(args)

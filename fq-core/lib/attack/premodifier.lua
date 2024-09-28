@@ -251,4 +251,22 @@ function premodifier.at_target_position(args) return {
     next = args.next
 } end
 
+---Selects a new target for the next attack.
+---
+---This is SLOW. Especially with a large `range`. Use sparingly.
+---
+---@param args {range: number, from: AttackReferencePoint, priority: TargetPriorityFunc, next: Attack?}
+---@param args.from AttackReferencePoint Target will be looked for in a circle centered at this point.
+---@param args.range number Radius of the target-searching circle.
+---@param args.priority TargetPriorityFunc Decides which target is chosen if there are multiple potential targets.
+---@param args.next Attack? The next attack to use.
+---@return PreFindTarget
+function premodifier.find_target(args) return {
+    atype = "pre-find-target",
+    range = args.range,
+    from = args.from,
+    priority = args.priority,
+    next = args.next
+} end
+
 return premodifier
