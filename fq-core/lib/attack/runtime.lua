@@ -37,12 +37,23 @@ exports.use_attack = use_attack
 ---@param atk AtkSpawnProjectile
 ---@param args AttackArgs
 attack_impl["atk-spawn-projectile"] = function(atk, args)
+
+    -- This check is needed because the attack 
+    -- could be fired after source/target already died.
+    -- (e.g. due to attack firing on a timer)
+    
+    local src = args.src
+    if src and not src.valid then src = nil end
+
+    local tgt = args.tgt
+    if tgt and not tgt.valid then tgt = nil end
+
     local projectile = args.surface.create_entity{
         name = atk.name,
         position = {args.ax, args.ay},
         force = args.force,
-        source = args.src or {args.sx, args.sy},
-        target = args.tgt or {args.tx, args.ty},
+        source = src or {args.sx, args.sy},
+        target = tgt or {args.tx, args.ty},
 
         -- projectile-specific args
         speed = vec2.norm(args.avx, args.avy),
