@@ -1,1 +1,0 @@
-global.standalone_timers = {}
