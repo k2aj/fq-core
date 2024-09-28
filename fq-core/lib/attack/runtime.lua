@@ -84,6 +84,11 @@ attack_impl["atk-beam"] = function(atk, args)
     if beam_src.valid == false then return end
     if beam_tgt.valid == false then return end
 
+    -- Trying to attach a beam to an entity without health throws an error
+    if beam_tgt.valid == true and beam_tgt.health == nil then
+        return
+    end
+
     local beam = args.surface.create_entity{
         name = atk.name,
         position = {args.ax, args.ay},
