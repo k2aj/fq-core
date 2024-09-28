@@ -64,9 +64,9 @@ Requirements:
 - jq
 - zip
 
-Open the `Makefile` and set the path to your Factorio installation's mod folder:
+Open the `Makefile` and set the path to your Factorio installation folder:
 ```Makefile
-FACTORIO_MODS_FOLDER = ~/GOG\ Games/Factorio/game/mods
+FACTORIO_FOLDER = ~/GOG\ Games/Factorio
 ```
 
 The `Makefile` contains some utilities which should help with mod development:
@@ -75,6 +75,7 @@ The `Makefile` contains some utilities which should help with mod development:
 - `make package` creates a ZIP package for the mod.
 - `make install` copies that ZIP package to Factorio's mods folder.
 - `make uninstall` removes the ZIP package from the Factorio's mods folder.
+- `make run` runs Factorio.
 
 
 ## Credits
