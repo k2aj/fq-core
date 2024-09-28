@@ -150,8 +150,6 @@ function Pattern.center(self, method)
     return self:move{-center[1], -center[2]}
 end
 
-local text = require("lib.text")
-
 ---Moves and scales the pattern to fit it in a rectangle of the specified size.
 ---@param self Pattern
 ---@param size Dimensions Dimensions of the rectangle in which to fit the pattern.
