@@ -202,4 +202,21 @@ function premodifier.slide(args)
     }
 end
 
+---Runs the next attack once for each entity in the selected scope.
+---@param args {scope: string, next: Attack?}
+---@return PreEach
+function premodifier.each(args)
+    local scope = args.scope or error("Missing required argument: 'scope'")
+    local ok, errmsg = atk_util.validate_scope_name(scope)
+    if not ok then
+        error("Invalid scope name: "..errmsg)
+    end
+
+    return {
+        atype = "pre-each",
+        scope = scope,
+        next = args.next
+    }
+end
+
 return premodifier

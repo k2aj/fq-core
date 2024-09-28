@@ -1,1 +1,1 @@
-FQC_TESTING_MODE = false
+FQC_TESTING_MODE = true

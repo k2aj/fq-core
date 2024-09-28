@@ -25,6 +25,65 @@ local function use_attack(atk, args)
 end
 exports.use_attack = use_attack
 
+---@param atk Attack
+---@param args AttackArgs
+---@param entity LuaEntity
+local function use_attack_from(atk, args, entity)
+    local old_sx, old_sy = args.sx, args.sy
+    local old_ax, old_ay = args.ax, args.ay
+    local old_arx, old_ary = args.arx, args.ary
+    local old_avx, old_avy = args.avx, args.avy
+    local old_src = args.src
+
+    local pos = entity.position
+    local speed = entity.speed
+    local orientation = entity.orientation
+
+    local ax = pos.x or pos[1]
+    local ay = pos.y or pos[2]
+    local arx,ary = vec2.orientation_to_rotvec(orientation)
+    
+    args.sx,args.sy = ax,ay
+    args.ax,args.ay = ax,ay
+    args.arx,args.ary = arx,ary
+    if speed then
+       args.avx,args.avy = vec2.mul(arx,ary,speed,speed) 
+    else
+        args.avx,args.avy = 0,0
+    end
+    args.src = entity
+
+    use_attack(atk, args)
+
+    args.sx,args.sy = old_sx,old_sy
+    args.ax,args.ay = old_ax,old_ay
+    args.arx,args.ary = old_arx,old_ary
+    args.avx,args.avy = old_avx,old_avy
+    args.src = old_src
+end
+
+---@param atk Attack
+---@param args AttackArgs
+---@param src LuaEntity
+---@param tgt LuaEntity
+local function use_attack_between(atk, args, src, tgt)
+    local old_tx, old_ty = args.tx, args.ty
+    local old_tgt = args.tgt
+
+    local tgt_pos = tgt.position
+    args.tx = tgt_pos.x or tgt_pos[1]
+    args.ty = tgt_pos.y or tgt_pos[2]
+    args.tgt = tgt
+
+    use_attack_from(atk, args, src)
+
+    args.tx,args.ty = old_tx,old_ty
+    args.tgt = old_tgt
+end
+exports.use_attack_between = use_attack_between
+
+
+
 --#region Builtin attack implementations
 
 --#region Primary/leaf attacks
@@ -350,46 +409,6 @@ attack_impl["pre-standalone-timer"] = function(atk, args)
     table.insert(global.standalone_timers, timer)
 end
 
----@param atk Attack
----@param args AttackArgs
----@param src LuaEntity
----@param tgt LuaEntity
-local function use_attack_between(atk, args, src, tgt)
-
-    local src_pos = src.position
-    local ax = src_pos.x or src_pos[1]
-    local ay = src_pos.y or src_pos[2]
-
-    local tgt_pos = tgt.position
-    local tx = tgt_pos.x or tgt_pos[1]
-    local ty = tgt_pos.y or tgt_pos[2]
-
-    local arx, ary = vec2.normalize_or(tx-ax, ty-ay, 1, 0)
-
-    local old_sx, old_sy = args.sx, args.sy
-    local old_ax, old_ay = args.ax, args.ay
-    local old_arx, old_ary = args.arx, args.ary
-    local old_avx, old_avy = args.avx, args.avy
-    local old_tx, old_ty = args.tx, args.ty
-    local old_src, old_tgt = args.src, args.tgt
-
-    args.sx,args.sy = ax,ay
-    args.ax,args.ay = ax,ay
-    args.arx,args.ary = arx, ary
-    args.avx,args.avy = 0,0
-    args.tx,args.ty = tx,ty
-    args.src,args.tgt = src,tgt
-
-    use_attack(atk, args)
-
-    args.sx,args.sy = old_sx,old_sy
-    args.ax,args.ay = old_ax,old_ay
-    args.arx,args.ary = old_arx,old_ary
-    args.avx,args.avy = old_avx,old_avy
-    args.tx,args.ty = old_tx,old_ty
-    args.src,args.tgt = old_src,old_tgt
-end
-
 ---@class PreSlide: UnaryModifier
 ---@field scope string Path to the used scope
 ---@field loop boolean
@@ -417,6 +436,20 @@ attack_impl["pre-slide"] = function(atk, args)
     end
 end
 
+---@class PreEach: UnaryModifier
+---@field scope string Path to the used scope
+
+---@param atk PreEach
+---@param args AttackArgs
+attack_impl["pre-each"] = function(atk, args)
+    local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    local next = atk.next
+    for _,entity in ipairs(scope.entities) do
+        if entity.valid then
+            use_attack_from(next, args, entity)
+        end
+    end
+end
 
 --#endregion
 

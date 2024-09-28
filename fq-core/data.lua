@@ -74,14 +74,16 @@ data:extend({ammo})
 
 local beam_test_ammo = util.copy(data.raw.ammo["shotgun-shell"])
 beam_test_ammo.name = "beam-test-ammo"
+beam_test_ammo.ammo_type.target_type = "entity"
 beam_test_ammo.ammo_type.action = atk.to_trigger(atk.chain{
 
     pre.scope{name = "bullets"},
-    pre.pattern{positions = {{2,-4}, {1,-2}, {1,2}, {2,4}}},
     pre.add_velocity{amount = 20},
+    pre.pattern{positions = {{2,-4}, {1,-2}, {1,2}, {2,4}}},
     atk.projectile{name="shotgun-pellet", range=20},
 
-    pre.slide{scope = "bullets"},
+    pre.timer{delay = 15},
+    pre.each{scope = "bullets"},
     atk.beam{name="electric-beam", duration=999, follow="both"}
 })
 data:extend({beam_test_ammo})
