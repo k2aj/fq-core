@@ -21,7 +21,6 @@ ammo.ammo_type.action = atk.to_trigger(atk.chain{
     pre.pattern{velocities={{0,-5},{0,5}}, positions={{0,0.2},{0,-0.2}}},
     atk.projectile {name="shotgun-pellet", range=6},
 
-    pre.scope{name = "bullets"},
     pre.add_velocity{amount=30},
     pre.timer{delay = 30, moving = true},
     pre.add_velocity{amount=-30},
@@ -58,19 +57,24 @@ ammo.ammo_type.action = atk.to_trigger(atk.chain{
             }
         },
 
+        
         pre.timer{delay=90, period=60, limit=7},
-        pre.rotate{angle=2*math.pi/64/2, pure=false},
-        pre.timer{period=2,limit=6},
-        pre.pattern{positions={{1,0}}, velocities = pattern.regular(64):scale(20)},
-        atk.projectile {name="shotgun-pellet", range=40}
-    },
+        pre.scope{name = "ring"},
+        atk.chain{
+            
+            pre.rotate{angle=2*math.pi/64/2, pure=false},
+            pre.timer{period=2,limit=6},
+            pre.pattern{positions={{1,0}}, velocities = pattern.regular(64):scale(20)},
+            atk.projectile {name="shotgun-pellet", range=40},
 
-    pre.timer{delay=600},
-    post.log_entity_count{scope="bullets"}
+            pre.timer{delay=105},
+            pre.fetch_source_position{},
+            pre.at_source_position{},
+            post.redirect{scope = "."}
+        }
+    },
 })
 data:extend({ammo})
-
-
 
 local beam_test_ammo = util.copy(data.raw.ammo["shotgun-shell"])
 beam_test_ammo.name = "beam-test-ammo"
@@ -84,6 +88,10 @@ beam_test_ammo.ammo_type.action = atk.to_trigger(atk.chain{
 
     pre.timer{delay = 15},
     pre.each{scope = "bullets"},
-    atk.beam{name="electric-beam", duration=999, follow="both"}
+    atk.beam{name="electric-beam", duration=999, follow="both"},
+
+    pre.timer{delay = 30},
+    pre.at_source_position{},
+    post.redirect{scope = "bullets"}
 })
 data:extend({beam_test_ammo})

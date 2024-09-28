@@ -219,4 +219,36 @@ function premodifier.each(args)
     }
 end
 
+---@param args {next: Attack?}
+---@return PreFetchSourcePosition
+function premodifier.fetch_source_position(args) return {
+    atype = "pre-fetch-source-position",
+    next = args.next
+} end
+
+---@param args {next: Attack?}
+---@return PreFetchTargetPosition
+function premodifier.fetch_target_position(args) return {
+    atype = "pre-fetch-target-position",
+    next = args.next
+} end
+
+---Runs the next attack at the cached position of source entity.
+---@param args {next: Attack?}
+---@return PreAtPosition
+function premodifier.at_source_position(args) return {
+    atype = "pre-at-position",
+    entity = "source",
+    next = args.next
+} end
+
+---Runs the next attack at the cached position of target entity.
+---@param args {next: Attack?}
+---@return PreAtPosition
+function premodifier.at_target_position(args) return {
+    atype = "pre-at-position",
+    entity = "target",
+    next = args.next
+} end
+
 return premodifier

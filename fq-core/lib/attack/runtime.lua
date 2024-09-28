@@ -410,6 +410,7 @@ attack_impl["pre-standalone-timer"] = function(atk, args)
 end
 
 ---@class PreSlide: UnaryModifier
+---@field atype "pre-slide"
 ---@field scope string Path to the used scope
 ---@field loop boolean
 
@@ -417,6 +418,7 @@ end
 ---@param args AttackArgs
 attack_impl["pre-slide"] = function(atk, args)
     local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    if scope == nil then return end
     local entities = scope.entities
     local next = atk.next
 
@@ -437,12 +439,14 @@ attack_impl["pre-slide"] = function(atk, args)
 end
 
 ---@class PreEach: UnaryModifier
+---@field atype "pre-each"
 ---@field scope string Path to the used scope
 
 ---@param atk PreEach
 ---@param args AttackArgs
 attack_impl["pre-each"] = function(atk, args)
     local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    if scope == nil then return end
     local next = atk.next
     for _,entity in ipairs(scope.entities) do
         if entity.valid then
@@ -451,11 +455,57 @@ attack_impl["pre-each"] = function(atk, args)
     end
 end
 
+---@class PreFetchSourcePosition: UnaryModifier
+---@field atype "pre-fetch-source-position"
+attack_impl["pre-fetch-source-position"] = function(atk, args)
+    local old_sx, old_sy = args.sx, args.sy
+    local src = args.src
+    if src ~= nil and src.valid then
+        local pos = src.position
+        args.sx = pos.x or pos[1]
+        args.sy = pos.y or pos[2]
+        use_attack(atk.next, args)
+    end
+    args.sx, args.sy = old_sx, old_sy
+end
+
+---@class PreFetchTargetPosition: UnaryModifier
+---@field atype "pre-fetch-target-position"
+attack_impl["pre-fetch-target-position"] = function(atk, args)
+    local old_tx, old_ty = args.tx, args.ty
+    local tgt = args.tgt
+    if tgt and tgt.valid then
+        local pos = tgt.position
+        args.tx = pos.x or pos[1]
+        args.ty = pos.y or pos[2]
+        use_attack(atk.next, args)
+    end
+    args.tx, args.ty = old_tx, old_ty
+end
+
+---@class PreAtPosition: UnaryModifier
+---@field atype "pre-at-position"
+---@field entity "source"|"target"
+
+---@param atk PreAtPosition
+---@param args AttackArgs
+attack_impl["pre-at-position"] = function(atk, args)
+    local old_ax, old_ay = args.ax, args.ay
+    if atk.entity == "source" then
+        args.ax, args.ay = args.sx, args.sy
+    else
+        args.ax, args.ay = args.tx, args.ty
+    end
+    use_attack(atk.next, args)
+    args.ax, args.ay = old_ax, old_ay
+end
+
 --#endregion
 
 --#region Postmodifiers
 
 ---@class PostLogEntityCount
+---@field atype "post-log-entity-count"
 ---@field scope string Path to the used scope
 
 ---@param atk PostLogEntityCount
@@ -466,6 +516,45 @@ attack_impl["post-log-entity-count"] = function(atk, args)
     if scope ~= nil then n = #scope.entities end
     text.logof("Found ",n," entities")
 end
+
+---@class PostRedirect: Attack
+---@field atype "post-redirect"
+---@field scope string Path to the used scope
+
+---@param atk PostRedirect
+---@param args AttackArgs
+attack_impl["post-redirect"] = function(atk, args)
+    local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    if scope == nil then return end
+
+    for _, entity in pairs(scope.entities) do
+        -- Yes, this only works on projectiles, I don't really care.
+        -- Beams are a second class citizen here anwyay.
+        if entity.valid then
+            local pos = entity.position
+            local dx = args.ax - (pos.x or pos[1])
+            local dy = args.ay - (pos.y or pos[2])
+            entity.orientation = vec2.rotvec_to_orientation(dx, dy)
+        end
+    end
+end
+
+---@class PostClearScope: Attack
+---@field atype "post-clear-scope"
+---@field scope string Path to the cleared scope
+
+---@param atk PostClearScope
+---@param args AttackArgs
+attack_impl["post-clear-scope"] = function(atk, args)
+    local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    if scope == nil then return end
+    
+    local entities = scope.entities
+    for i=#entities,1,-1 do
+        entities[i]=nil
+    end
+end
+
 
 --#endregion
 
