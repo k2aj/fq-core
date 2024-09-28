@@ -350,6 +350,74 @@ attack_impl["pre-standalone-timer"] = function(atk, args)
     table.insert(global.standalone_timers, timer)
 end
 
+---@param atk Attack
+---@param args AttackArgs
+---@param src LuaEntity
+---@param tgt LuaEntity
+local function use_attack_between(atk, args, src, tgt)
+
+    local src_pos = src.position
+    local ax = src_pos.x or src_pos[1]
+    local ay = src_pos.y or src_pos[2]
+
+    local tgt_pos = tgt.position
+    local tx = tgt_pos.x or tgt_pos[1]
+    local ty = tgt_pos.y or tgt_pos[2]
+
+    local arx, ary = vec2.normalize_or(tx-ax, ty-ay, 1, 0)
+
+    local old_sx, old_sy = args.sx, args.sy
+    local old_ax, old_ay = args.ax, args.ay
+    local old_arx, old_ary = args.arx, args.ary
+    local old_avx, old_avy = args.avx, args.avy
+    local old_tx, old_ty = args.tx, args.ty
+    local old_src, old_tgt = args.src, args.tgt
+
+    args.sx,args.sy = ax,ay
+    args.ax,args.ay = ax,ay
+    args.arx,args.ary = arx, ary
+    args.avx,args.avy = 0,0
+    args.tx,args.ty = tx,ty
+    args.src,args.tgt = src,tgt
+
+    use_attack(atk, args)
+
+    args.sx,args.sy = old_sx,old_sy
+    args.ax,args.ay = old_ax,old_ay
+    args.arx,args.ary = old_arx,old_ary
+    args.avx,args.avy = old_avx,old_avy
+    args.tx,args.ty = old_tx,old_ty
+    args.src,args.tgt = old_src,old_tgt
+end
+
+---@class PreSlide: UnaryModifier
+---@field scope string Path to the used scope
+---@field loop boolean
+
+---@param atk PreSlide
+---@param args AttackArgs
+attack_impl["pre-slide"] = function(atk, args)
+    local scope = atk_util.get_scope_by_path(args.scope, atk.scope)
+    local entities = scope.entities
+    local next = atk.next
+
+    for i=1,#entities-1 do
+        local src = entities[i]
+        local tgt = entities[i+1]
+        if src.valid and tgt.valid then
+            use_attack_between(next, args, src, tgt)
+        end
+    end
+    if #entities >= 2 and atk.loop then
+        local last = entities[#entities]
+        local first = entities[1]
+        if first.valid and last.valid then
+            use_attack_between(next, args, last, first)
+        end
+    end
+end
+
+
 --#endregion
 
 --#region Postmodifiers

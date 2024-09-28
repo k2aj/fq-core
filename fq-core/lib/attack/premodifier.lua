@@ -178,4 +178,28 @@ function premodifier.timer(args)
     }
 end
 
+---Runs the next attack once for each consecutive pair of valid entities in the chosen scope.
+---
+---The first entity in the pair becomes the source of the attack.
+---
+---The second entity in the pair becomes the target of the attack.
+---@param args {scope: string, loop: boolean?, next: Attack?}
+---@return PreSlide
+function premodifier.slide(args)
+    local scope = args.scope or error("Missing required argument: 'scope'")
+    local loop = args.loop or false
+
+    local ok, errmsg = atk_util.validate_scope_name(scope)
+    if not ok then
+        error("Invalid scope name: "..errmsg)
+    end
+
+    return {
+        atype = "pre-slide",
+        scope = scope,
+        loop = loop,
+        next = args.next
+    }
+end
+
 return premodifier

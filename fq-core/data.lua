@@ -15,8 +15,6 @@ local ammo = util.copy(data.raw.ammo["shotgun-shell"])
 ammo.name = "custom-attack-shotgun-shell"
 ammo.ammo_type.action = atk.to_trigger(atk.chain{
 
-    atk.beam{name = "electric-beam", duration = 60},
-
     pre.add_velocity{amount=30},
     pre.timer{period=1, moving = true, limit=30},
     pre.add_velocity{amount=-30},
@@ -71,3 +69,19 @@ ammo.ammo_type.action = atk.to_trigger(atk.chain{
     post.log_entity_count{scope="bullets"}
 })
 data:extend({ammo})
+
+
+
+local beam_test_ammo = util.copy(data.raw.ammo["shotgun-shell"])
+beam_test_ammo.name = "beam-test-ammo"
+beam_test_ammo.ammo_type.action = atk.to_trigger(atk.chain{
+
+    pre.scope{name = "bullets"},
+    pre.pattern{positions = {{2,-4}, {1,-2}, {1,2}, {2,4}}},
+    pre.add_velocity{amount = 20},
+    atk.projectile{name="shotgun-pellet", range=20},
+
+    pre.slide{scope = "bullets"},
+    atk.beam{name="electric-beam", duration=999, follow="both"}
+})
+data:extend({beam_test_ammo})
