@@ -66,6 +66,41 @@ attack_impl["atk-spawn-projectile"] = function(atk, args)
     end
 end
 
+---@class AtkSpawnBeam: Attack
+---@field atype "atk-spawn-beam"
+---@field name string Name of the beam prototype to spawn.
+---@field range number? Maximum length of the beam [tiles].
+---@field duration number Maximum duration of the beam [ticks].
+---@field follow_source boolean
+---@field follow_target boolean
+
+---@param atk AtkSpawnBeam
+---@param args AttackArgs
+attack_impl["atk-spawn-beam"] = function(atk, args)
+
+    local beam_src = (atk.follow_source and args.src) or {args.sx, args.sy}
+    local beam_tgt = (atk.follow_target and args.tgt) or {args.tx, args.ty}
+
+    if beam_src.valid == false then return end
+    if beam_tgt.valid == false then return end
+
+    local beam = args.surface.create_entity{
+        name = atk.name,
+        position = {args.ax, args.ay},
+        force = args.force,
+        source = beam_src,
+        target = beam_tgt,
+
+        -- beam-specific args
+        max_length = atk.range,
+        duration = atk.duration
+    }
+    if beam then
+        local entities = args.scope.entities
+        entities[#entities+1] = beam
+    end
+end
+
 --#endregion
 
 --#region Composites etc.

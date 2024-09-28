@@ -16,6 +16,27 @@ attack.spawn_projectile = function(args)
     }
 end
 
+---@param args table
+---@param args.name string Name of the beam prototype.
+---@param args.range number? Maximum range of the beam.
+---@param args.duration number Duration of the beam in ticks.
+---@param args.follow "source"|"target"|"both"|nil
+---@return AtkSpawnBeam
+attack.spawn_beam = function(args)
+    local name = args.name or error("attack.spawn_beam: missing required argument 'name'")
+    local duration = args.duration or error("attack.spawn_beam: missing required argument 'duration'")
+    local follow_source = (args.follow == "source" or args.follow == "both")
+    local follow_target = (args.follow == "target" or args.follow == "both")
+    return {
+        atype = "atk-spawn-beam",
+        name = name,
+        range = args.range,
+        duration = duration,
+        follow_source = follow_source,
+        follow_target = follow_target
+    }
+end
+
 ---Uses one of the child attacks, selected at random.
 ---@param children Attack[]
 ---@return AtkRandom
