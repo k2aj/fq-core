@@ -5,12 +5,12 @@ local attack = {}
 ---@param args table
 ---@param args.name string Name of the projectile prototype.
 ---@param args.range number Range of the fired projectile.
----@return AtkSpawnProjectile
-attack.spawn_projectile = function(args)
-    local name = args.name or error("attack.spawn_projectile: missing argument \"name\"")
-    local range = args.range or error("attack.spawn_projectile: missing argument \"range\"")
+---@return AtkProjectile
+attack.projectile = function(args)
+    local name = args.name or error("attack.projectile: missing argument \"name\"")
+    local range = args.range or error("attack.projectile: missing argument \"range\"")
     return {
-        atype = "atk-spawn-projectile",
+        atype = "atk-projectile",
         name = name,
         range = range,
     }
@@ -21,14 +21,14 @@ end
 ---@param args.range number? Maximum range of the beam.
 ---@param args.duration number Duration of the beam in ticks.
 ---@param args.follow "source"|"target"|"both"|nil
----@return AtkSpawnBeam
-attack.spawn_beam = function(args)
-    local name = args.name or error("attack.spawn_beam: missing required argument 'name'")
-    local duration = args.duration or error("attack.spawn_beam: missing required argument 'duration'")
+---@return AtkBeam
+attack.beam = function(args)
+    local name = args.name or error("attack.beam: missing required argument 'name'")
+    local duration = args.duration or error("attack.beam: missing required argument 'duration'")
     local follow_source = (args.follow == "source" or args.follow == "both")
     local follow_target = (args.follow == "target" or args.follow == "both")
     return {
-        atype = "atk-spawn-beam",
+        atype = "atk-beam",
         name = name,
         range = args.range,
         duration = duration,

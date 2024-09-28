@@ -29,14 +29,14 @@ exports.use_attack = use_attack
 
 --#region Primary/leaf attacks
 
----@class AtkSpawnProjectile: Attack
----@field atype "atk-spawn-projectile"
+---@class AtkProjectile: Attack
+---@field atype "atk-projectile"
 ---@field name string Name of the projectile prototype to spawn
 ---@field range number Range of the projectile
 
----@param atk AtkSpawnProjectile
+---@param atk AtkProjectile
 ---@param args AttackArgs
-attack_impl["atk-spawn-projectile"] = function(atk, args)
+attack_impl["atk-projectile"] = function(atk, args)
 
     -- This check is needed because the attack 
     -- could be fired after source/target already died.
@@ -66,17 +66,17 @@ attack_impl["atk-spawn-projectile"] = function(atk, args)
     end
 end
 
----@class AtkSpawnBeam: Attack
----@field atype "atk-spawn-beam"
+---@class AtkBeam: Attack
+---@field atype "atk-beam"
 ---@field name string Name of the beam prototype to spawn.
 ---@field range number? Maximum length of the beam [tiles].
 ---@field duration number Maximum duration of the beam [ticks].
 ---@field follow_source boolean
 ---@field follow_target boolean
 
----@param atk AtkSpawnBeam
+---@param atk AtkBeam
 ---@param args AttackArgs
-attack_impl["atk-spawn-beam"] = function(atk, args)
+attack_impl["atk-beam"] = function(atk, args)
 
     local beam_src = (atk.follow_source and args.src) or {args.sx, args.sy}
     local beam_tgt = (atk.follow_target and args.tgt) or {args.tx, args.ty}
