@@ -1,4 +1,4 @@
-local atk_util = require("__fq-core__.internal.attack.util")
+local atk_util = require("__fq-core__/internal/attack/util")
 
 local attack = {}
 
@@ -20,6 +20,7 @@ end
 ---@param args.name string Name of the beam prototype.
 ---@param args.range number? Maximum range of the beam.
 ---@param args.duration number Duration of the beam in ticks.
+---@param args.source_offset Vector?
 ---@param args.follow "source"|"target"|"both"|nil
 ---@return AtkBeam
 attack.beam = function(args)
@@ -27,13 +28,15 @@ attack.beam = function(args)
     local duration = args.duration or error("attack.beam: missing required argument 'duration'")
     local follow_source = (args.follow == "source" or args.follow == "both")
     local follow_target = (args.follow == "target" or args.follow == "both")
+    local source_offset = args.source_offset or {0,-1}
     return {
         atype = "atk-beam",
         name = name,
         range = args.range,
         duration = duration,
         follow_source = follow_source,
-        follow_target = follow_target
+        follow_target = follow_target,
+        source_offset = source_offset
     }
 end
 

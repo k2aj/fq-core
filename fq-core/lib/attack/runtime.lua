@@ -132,6 +132,7 @@ end
 ---@field duration number Maximum duration of the beam [ticks].
 ---@field follow_source boolean
 ---@field follow_target boolean
+---@field source_offset Vector
 
 ---@param atk AtkBeam
 ---@param args AttackArgs
@@ -157,7 +158,8 @@ attack_impl["atk-beam"] = function(atk, args)
 
         -- beam-specific args
         max_length = atk.range,
-        duration = atk.duration
+        duration = atk.duration,
+        source_offset = atk.source_offset
     }
     if beam then
         local entities = args.scope.entities
@@ -583,6 +585,7 @@ attack_impl["pre-find-target"] = function(atk, args)
         local priority = priority_func(x,y,entity)
         if priority > best_priority then
             best_target = entity
+            best_priority = priority
         end
     end
     if best_target == nil then return end
