@@ -1,10 +1,12 @@
+---@diagnostic disable: undefined-doc-param
 local atk_util = require("__fq-core__/internal/attack/util")
 
 local attack = {}
 
----@param args table
----@param args.name string Name of the projectile prototype.
----@param args.range number Range of the fired projectile.
+---Shoots a projectile.
+---@param args {name: string, range: number}
+---@param name  string  Name of the projectile prototype.
+---@param range number  Max range of the fired projectile.
 ---@return AtkProjectile
 attack.projectile = function(args)
     local name = args.name or error("attack.projectile: missing argument \"name\"")
@@ -16,10 +18,11 @@ attack.projectile = function(args)
     }
 end
 
----@param args table
----@param args.name string Name of the beam prototype.
----@param args.range number? Maximum range of the beam.
----@param args.duration number Duration of the beam in ticks.
+---Shoots a beam.
+---@param args {name: string, range: number, duration: number, source_offset: Vector?, follow: "source"|"target"|"both"|nil}
+---@param name  string  Name of the beam prototype.
+---@param range number? Max range of the beam. `nil` means unlimited range.
+---@param args.duration number Max duration of the beam in ticks.
 ---@param args.source_offset Vector?
 ---@param args.follow "source"|"target"|"both"|nil
 ---@return AtkBeam
@@ -81,16 +84,16 @@ attack.chain = function(attacks)
     }
 end
 
----Converts an Attack to a TriggerEffectItem.
+---Converts an `Attack` to a `TriggerEffectItem`.
 ---
 ---@param attack Attack
----@return TriggerEffectItem # Can only be used in target_effects
+---@return TriggerEffectItem # Can only be used in `target_effects`.
 local function to_effect(attack)
     return {type = "script", effect_id = atk_util.DATA_register_attack(attack)}
 end
 attack.to_effect = to_effect
 
---- Converts an Attack to a TriggerItem
+--- Converts an `Attack` to a `TriggerItem`.
 ---@param attack Attack
 ---@return TriggerItem
 attack.to_trigger = function(attack)

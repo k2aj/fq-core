@@ -1,19 +1,16 @@
+---@diagnostic disable: undefined-doc-param
 local vec2 = require("__fq-core__/lib/vec2")
 local text = require("__fq-core__/lib/text")
 local atk_util = require("__fq-core__/internal/attack/util")
 
 local premodifier = {}
 
----Premodifier which repeats the next attack several times.
+-- This is named `repeats` instead of `repeat` to avoid collision with `repeat` keyword
+
+---Repeats the `next` attack several times.
 ---
----You must provide either "count" or "min_count, max_count" in arguments.
----You can't provide both at the same time. 
----
----@param args table
----@param args.next Attack? Next attack used by this premodifier.
----@param args.count integer Number of repetitions.
----@param args.min_count integer Minimum number of repetitions.
----@param args.max_count integer Maximum number of repetitions.
+---The number of repetitions can be constant (`count`) or a random number ≥`min_count` and ≤`max_count`.
+---@param args {count: integer, next: Attack?}|{min_count: integer, max_count: integer, next: Attack?}
 ---@return PreRepeats
 premodifier.repeats = function(args)
     local next = args.next
@@ -38,16 +35,15 @@ premodifier.repeats = function(args)
     }
 end
 
----Premodifier which increases velocity of the next attack.
+---Increases velocity of the `next` attack.
 ---
 ---Randomness parameter controls in which direction the velocity will be added:
 --- - Randomness=0: velocity is added along the attack's rotation vector.
 --- - Randomness=1: the added velocity vector is completely random, with length ≤ args.amount
 --- - Other values give a linear combination of the above two options.
 ---@param args table
----@param args.next Attack? Next attack used by this premodifier.
----@param args.amount number How much velocity to add [m/s]
----@param args.randomness number? Controls direction of added velocity.
+---@param amount     number  How much velocity to add [m/s]
+---@param randomness number? Controls direction of added velocity.
 ---@return PreAddVelocity
 premodifier.add_velocity = function(args)
     local next = args.next
@@ -62,11 +58,10 @@ premodifier.add_velocity = function(args)
     }
 end
 
----Rotates the next attack's velocity and rotation vectors by a given angle.
+---Rotates the `next` attack's velocity and rotation vectors by a given angle.
 ---@param args {angle: number, pure: boolean?, next: Attack?}
----@param args.next Attack? Next attack used by this premodifier.
----@param args.angle number Rotation angle (clockwise) [rad]
----@param args.pure boolean?
+---@param angle number   Rotation angle (clockwise) [rad]
+---@param pure  boolean?
 ---@return PreRotate
 premodifier.rotate = function(args)
     local pure = args.pure
@@ -80,12 +75,11 @@ premodifier.rotate = function(args)
     }
 end
 
----Premodifier which arranges projectiles into a pattern.
+---Uses the `next` attack multiple times, arranging it into a chosen pattern.
 ---
----@param args table
----@param args.next Attack? Next attack used by this premodifier.
----@param args.positions number[][]?
----@param args.velocities number[][]?
+---@param args {positions: number[][]?, velocities: number[][]?, next: Attack?}
+---@param positions  number[][]? Relative positions of each used attack.
+---@param velocities number[][]? Relative velocities of each used attack.
 ---@return PrePattern
 premodifier.pattern = function(args)
     local positions = args.positions or {}
@@ -99,18 +93,19 @@ premodifier.pattern = function(args)
     }
 end
 
+---Randomizes the rotation vector of the `next` attack.
+---@param args {next: Attack?}
 ---@return UnaryModifier
 premodifier.random_rotation = function(args) return {
     atype = "pre-random-rotation",
     next = args.next
 } end
 
----Creates a scope, which captures any entities created by the modified attack.
----
----This scope can then be used to pass entities to postmodifiers.
----@param args table
----@param args.next Atack? Next attack used by this premodifier.
----@param args.name string Name of the created scope.
+---Creates a scope, which captures any entities created by the `next` attack.
+--- - Scopes can be used to pass entities to other attack modifiers.
+--- - Scopes can be nested similar to directories in a file system.
+---@param args {name: string, next: Attack?}
+---@param name string Name of the created scope.
 ---@return PreScope
 function premodifier.scope(args)
     local name = args.name or error("Missing required parameter: name")
@@ -125,13 +120,13 @@ function premodifier.scope(args)
     } 
 end
 
----Creates a standalone timer, which fires the next attack periodically.
+---Creates a standalone timer, which fires the `next` attack periodically.
 ---
 ---@param args {delay: integer?, period: integer?, limit: integer?, moving: boolean?, next: Attack?}
----@param args.delay  integer   Number of ticks before the first firing. Defaults to `period`.
----@param args.period integer   Number of ticks between each next firing.
----@param args.limit  integer   Maximum number of times the timer can fire. Defaults to `1` if period is not set.
----@param args.moving boolean   Does this timer move or stay in place?
+---@param delay  integer   Number of ticks before the first firing. Defaults to `period`.
+---@param period integer   Number of ticks between each next firing.
+---@param limit  integer   Maximum number of times the timer can fire. Defaults to `1` if period is not set.
+---@param moving boolean   Does this timer move or stay in place?
 ---@return PreStandaloneTimer
 function premodifier.timer(args)
 
@@ -178,12 +173,11 @@ function premodifier.timer(args)
     }
 end
 
----Runs the next attack once for each consecutive pair of valid entities in the chosen scope.
----
----The first entity in the pair becomes the source of the attack.
----
----The second entity in the pair becomes the target of the attack.
+---Runs the `next` attack once for each consecutive pair of valid entities in the chosen `scope`.
+--- - The first entity in each pair becomes the source of the attack.
+--- - The second entity in each pair becomes the target of the attack.
 ---@param args {scope: string, loop: boolean?, next: Attack?}
+---@param loop boolean? If `true`, the pair `<last entity, first entity>` is also considered.
 ---@return PreSlide
 function premodifier.slide(args)
     local scope = args.scope or error("Missing required argument: 'scope'")
@@ -202,7 +196,9 @@ function premodifier.slide(args)
     }
 end
 
----Runs the next attack once for each entity in the selected scope.
+---Runs the `next` attack once from each entity in the selected `scope`.
+---
+---The entity becomes the source of the attack.
 ---@param args {scope: string, next: Attack?}
 ---@return PreEach
 function premodifier.each(args)
@@ -219,6 +215,12 @@ function premodifier.each(args)
     }
 end
 
+---Runs the `next` attack with source position freshly fetched from the source entity.
+---
+---Does nothing (`next` doesn't run) if the source entity is invalid or doesn't exist.
+---
+---This is _very niche_ and only really useful in timers (because source position is
+---cached, so it might become out of date before your timer fires).
 ---@param args {next: Attack?}
 ---@return PreFetchSourcePosition
 function premodifier.fetch_source_position(args) return {
@@ -226,6 +228,12 @@ function premodifier.fetch_source_position(args) return {
     next = args.next
 } end
 
+---Runs the `next` attack with target position freshly fetched from the target entity.
+---
+---Does nothing (`next` doesn't run) if the target entity is invalid or doesn't exist.
+---
+---This is _very niche_ and only really useful in timers (because target position is
+---cached, so it might become out of date before your timer fires).
 ---@param args {next: Attack?}
 ---@return PreFetchTargetPosition
 function premodifier.fetch_target_position(args) return {
@@ -233,7 +241,7 @@ function premodifier.fetch_target_position(args) return {
     next = args.next
 } end
 
----Runs the next attack at the cached position of source entity.
+---Runs the `next` attack at the cached position of source entity.
 ---@param args {next: Attack?}
 ---@return PreAtPosition
 function premodifier.at_source_position(args) return {
@@ -242,7 +250,7 @@ function premodifier.at_source_position(args) return {
     next = args.next
 } end
 
----Runs the next attack at the cached position of target entity.
+---Runs the `next` attack at the cached position of target entity.
 ---@param args {next: Attack?}
 ---@return PreAtPosition
 function premodifier.at_target_position(args) return {
@@ -251,15 +259,18 @@ function premodifier.at_target_position(args) return {
     next = args.next
 } end
 
----Selects a new target for the next attack.
+---Runs the `next` attack with a newly selected target entity and target position.
 ---
----This is SLOW. Especially with a large `range`. Use sparingly.
+--- - Targets are searched in a circle.
+--- - Only entities with health can be chosen as targets.
+--- - If no targets are found, this modifier does nothing and `next` doesn't run.
+---
+---**WARNING:** This is SLOW. Especially with a large `range`. Use sparingly.
 ---
 ---@param args {range: number, from: AttackReferencePoint, priority: TargetPriorityFunc, next: Attack?}
----@param args.from AttackReferencePoint Target will be looked for in a circle centered at this point.
----@param args.range number Radius of the target-searching circle.
----@param args.priority TargetPriorityFunc Decides which target is chosen if there are multiple potential targets.
----@param args.next Attack? The next attack to use.
+---@param from AttackReferencePoint   Center of the target-searching circle.
+---@param range number                Radius of the target-searching circle.
+---@param priority TargetPriorityFunc Decides which target is chosen if there are multiple potential targets.
 ---@return PreFindTarget
 function premodifier.find_target(args) return {
     atype = "pre-find-target",

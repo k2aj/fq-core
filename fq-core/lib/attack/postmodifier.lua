@@ -1,5 +1,10 @@
 local post = {}
 
+--- Logs the number of entities in the chosen `scope`.
+--- 
+--- Useful for debugging.
+---@param args {scope: string}
+---@return PostLogEntityCount
 function post.log_entity_count(args)
     return {
         atype = "post-log-entity-count",
@@ -7,7 +12,7 @@ function post.log_entity_count(args)
     }
 end
 
---- Redirects projectiles from the chosen scope towards the attack position.
+--- Redirects projectiles from the chosen `scope` towards the attack position.
 ---@param args {scope: string}
 ---@return PostRedirect
 function post.redirect(args)
@@ -17,7 +22,7 @@ function post.redirect(args)
     }
 end
 
---- Removes all entities from the chosen scope.
+--- Removes all entities from the chosen `scope`.
 --- 
 --- The entities are not actually deleted from the game, just from the scope.
 ---@param args {scope: string}

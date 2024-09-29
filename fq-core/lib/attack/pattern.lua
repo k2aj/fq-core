@@ -3,9 +3,11 @@ local exports = {}
 ---@class Point: {[1]:number, [2]:number}
 ---@alias Dimensions number|{[1]:number, [2]:number}
 
+---Basically a fancy list of points.
 ---@class Pattern
 local Pattern = {}
 
+---Creates an empty pattern.
 ---@return Pattern
 function Pattern.new()
     local result = {}
@@ -18,6 +20,8 @@ function Pattern.new()
     return result
 end
 
+---Creates `npoints` inbetween points spaced evenly between `p1` and `p2`,
+---then adds these inbetween points to `pattern`.
 ---@param pattern Pattern
 ---@param p1 Point
 ---@param p2 Point
@@ -37,8 +41,15 @@ local function add_inbetweens(pattern, p1, p2, npoints)
     end
 end
 
+---Creates a copy of this pattern with increased point count.
+---
+---The copy contains:
+--- - All points from `self`.
+--- - Additional `npoints` evenly spaced inbetween points added between each pair of consecutive points in `self`.
+---
+---This function is intended for open shapes. For closed shapes `subdivide_loop()` should be used instead.
 ---@param self Pattern
----@param npoints integer
+---@param npoints integer How many new points to add between each pair of consecutive points.
 ---@return Pattern
 function Pattern.subdivide_line(self, npoints)
     if #self <= 1 then return self:dup() end
@@ -51,8 +62,16 @@ function Pattern.subdivide_line(self, npoints)
     return result
 end
 
+---Creates a copy of this pattern with increased point count.
+---
+---The copy contains:
+--- - All points from `self`.
+--- - Additional `npoints` evenly spaced inbetween points added between each pair of consecutive points in `self`.
+--- - Additional `npoints` evenly spaced inbetween points added between last and first points in `self`.
+--- 
+---This function is intended for closed shapes. For open shapes `subdivide_line()` should be used instead.
 ---@param self Pattern
----@param npoints integer
+---@param npoints integer How many new points to add between each pair of consecutive points.
 ---@return Pattern
 function Pattern.subdivide_loop(self, npoints)
     if #self <= 1 then return self:dup() end
@@ -63,7 +82,7 @@ function Pattern.subdivide_loop(self, npoints)
     return result
 end
 
----Creates a new pattern by applying function `f` to each point in the pattern.
+---Creates a new pattern by applying function `f` to each point in `self`.
 ---@param self Pattern
 ---@param f fun(p:Point):Point
 ---@return Pattern
@@ -75,13 +94,14 @@ function Pattern.map(self, f)
     return result
 end
 
----Creates a copy of the pattern.
+---Creates a copy of this pattern.
 ---@param self Pattern
 ---@return Pattern
 function Pattern.dup(self)
     return self:map(function(x) return x end)
 end
 
+---Creates a scaled copy of this pattern.
 ---@param self Pattern
 ---@param scale {[1]: number, [2]: number}|number
 ---@return Pattern
@@ -90,6 +110,7 @@ function Pattern.scale(self, scale)
     return self:map(function(point) return {point[1]*scale[1], point[2]*scale[2]} end)
 end
 
+---Creates a copy of this pattern with all points translated by the given vector.
 ---@param self Pattern
 ---@param translation {[1]: number, [2]: number}
 ---@return Pattern
@@ -97,7 +118,7 @@ function Pattern.move(self, translation)
     return self:map(function(point) return {point[1]+translation[1], point[2]+translation[2]} end)
 end
 
----Rotates the pattern around the origin `{0,0}`
+---Creates a rotated copy of this pattern.
 ---@param self Pattern
 ---@param angle number
 ---@return Pattern
@@ -127,7 +148,7 @@ function Pattern.bounding_box(self)
     return {{x0,y0}, {x1,y1}}
 end
 
----Centers a pattern around the origin `{0,0}`
+---Creates a copy of this pattern, but centered at the origin `{0,0}`
 ---@param self Pattern
 ---@param method "bounding-box"|"mean"|nil
 function Pattern.center(self, method)
@@ -150,7 +171,7 @@ function Pattern.center(self, method)
     return self:move{-center[1], -center[2]}
 end
 
----Moves and scales the pattern to fit it in a rectangle of the specified size.
+---Creates a copy of this pattern, moved and scaled to fit in a rectangle of desired `size` centered at `{0,0}`.
 ---@param self Pattern
 ---@param size Dimensions Dimensions of the rectangle in which to fit the pattern.
 ---@return Pattern
